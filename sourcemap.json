@@ -1,0 +1,1 @@
+{"name":"Net","className":"ModuleScript","filePaths":["src/init.luau","default.project.json"],"children":[{"name":"NetClient","className":"ModuleScript","filePaths":["src/NetClient.luau"]},{"name":"NetServer","className":"ModuleScript","filePaths":["src/NetServer.luau"]},{"name":"NetUtils","className":"ModuleScript","filePaths":["src/NetUtils.luau"]}]}
