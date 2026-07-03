@@ -2,7 +2,7 @@
 name = "aabiskar7q/net"
 description = "A Simple Networking Tool"
 license = "MIT"
-version = "1.0.0"
+version = "1.0.1"
 registry = "https://github.com/UpliftGames/wally-index"
 realm = "shared"
 
