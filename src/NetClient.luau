@@ -33,7 +33,7 @@ local function onEvent(accessModule: Module, methodName: string, ...)
 	end
 
 	-- Call
-	method(...)
+	method(method, ...)
 end
 
 -- Main Class

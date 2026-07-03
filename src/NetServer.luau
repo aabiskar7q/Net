@@ -7,7 +7,7 @@ local NetUtils = require(script.Parent.NetUtils)
 -- 		================== TYPES ================
 -- ====================================================
 
-type Method = (Player, ...any?) -> ...any?
+type Method = (Method, Player, ...any?) -> ...any?
 
 export type NetServer = {
 	Tag: string,
@@ -92,16 +92,18 @@ local function onEvent(
 	local method = module[methodName]
 
 	if not method or type(method) ~= "function" then
+		warn("Method Not Found in Server...")
 		return
 	end
 
 	-- Check if Method is accessible
 	if not table.find(accessFunctions, method) then
+		warn("Method Not Accessible to Client...")
 		return
 	end
 
 	--
-	local retVal = method(player, ...)
+	local retVal = method(method, player, ...)
 
 	return retVal
 end
@@ -180,7 +182,7 @@ end
 
 function NetServer.Fire(
 	self: NetServer,
-	players: ((Player) -> boolean | { Player })?,
+	players: (((Player) -> boolean) | { Player })?,
 	methodName: string,
 	isUnreliable: boolean?,
 	...
@@ -190,7 +192,12 @@ function NetServer.Fire(
 	local clients = {} :: { Player }
 
 	if not players then
-		clients = {}
+		-- Fire All If not Provided
+		if isUnreliable then
+			self.Remotes.UEvent:FireAllClients(methodName, ...)
+		else
+			self.Remotes.Event:FireAllClients(methodName, ...)
+		end
 	elseif type(players) == "function" then
 		--
 		for _, player in Players:GetPlayers() do
@@ -208,18 +215,13 @@ function NetServer.Fire(
 		end
 	end
 
-	if #clients < 1 then
-		clients = Players:GetPlayers()
-	end
-
 	--
 	for _, player in clients do
 		if isUnreliable then
 			self.Remotes.UEvent:FireClient(player, methodName, ...)
-			continue
+		else
+			self.Remotes.Event:FireClient(player, methodName, ...)
 		end
-
-		self.Remotes.Event:FireClient(player, methodName, ...)
 	end
 end
 
