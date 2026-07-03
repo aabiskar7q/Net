@@ -16,6 +16,7 @@ export type NetServer = {
 	Remotes: NetUtils.Remotes,
 	MaxCall: number?,
 	LastResponse: { [Player]: { [string]: number } },
+	PlayerRemovingConn: RBXScriptConnection,
 
 	-- Methods
 	clean: (self: NetServer) -> ...any?,
@@ -39,7 +40,7 @@ export type NetServer = {
 local function createNewNetwork(tag: string): NetUtils.Remotes?
 	assert(tag, "Tag not Provided.")
 
-	if NetUtils.CONTAINER:FindFirstChild(tag) then
+	if NetUtils.getNetworks(tag) then
 		warn(`{tag} already Exists. Creation Failed!`)
 		return nil
 	end
@@ -163,6 +164,11 @@ function NetServer.init(
 		end
 	end
 
+	--
+	self.PlayerRemovingConn = Players.PlayerRemoving:Connect(function(player: Player)
+		self.LastResponse[player] = nil
+	end)
+
 	setmetatable(self, NetServer)
 
 	return self
@@ -243,11 +249,13 @@ function NetServer.CheckRateLimitStatus(self: NetServer, player: Player, methodN
 end
 
 function NetServer.clean(self: NetServer)
-	local container = NetUtils:getNetworks(self.Tag)
+	local container = NetUtils.getNetworks(self.Tag)
 
 	if container then
 		container:Destroy()
 	end
+
+	table.clear(self.LastResponse)
 end
 
 return NetServer

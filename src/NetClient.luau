@@ -50,7 +50,7 @@ function NetClient.init(tag: string, accessModule: Module)
 		LastFired = {},
 	}
 
-	local container = NetUtils:getNetworks(self.Tag)
+	local container = NetUtils.getNetworks(self.Tag)
 
 	assert(container, tag .. "_Networker not created by Server...")
 
