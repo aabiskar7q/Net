@@ -2,6 +2,9 @@
 local RunService = game:GetService("RunService")
 local NetUtils = require(script.Parent.NetUtils)
 
+-- Client-side networking helper.
+-- This module resolves the corresponding server network container,
+-- receives remote events, and sends client requests back to the server.
 -- ====================================================
 -- 		================== TYPES ================
 -- ====================================================
@@ -20,7 +23,11 @@ export type NetClient = {
 }
 
 -- Helper Functions
+--[=[
+	Invoke a client-side method when the server fires a remote event.
+]=]
 local function onEvent(accessModule: Module, methodName: string, ...)
+	-- Invoke the client-side handler for the incoming remote method.
 	if not accessModule or not methodName then
 		return
 	end
@@ -40,6 +47,9 @@ end
 local NetClient = {}
 NetClient.__index = NetClient
 
+--[=[
+	Initialize the client-side Networker and connect remote events.
+]=]
 function NetClient.init(tag: string, accessModule: Module)
 	assert(RunService:IsClient(), "Can Only be Initialized on Client")
 	assert(accessModule, "Access Module not Provided.")
@@ -82,13 +92,16 @@ function NetClient.init(tag: string, accessModule: Module)
 	return self :: NetClient
 end
 
+--[=[
+	Send a remote event from client to server. This supports
+	reliable and unreliable event types.
+]=]
 function NetClient.Fire(self: NetClient, methodName: string, isUnreliable: boolean?, ...)
 	assert(methodName, "Method Not Provided")
-	--
+	-- Rate-limit outgoing client requests.
 	local delay = 1 / NetUtils.MAXIMUM_CALLS
 
 	if (os.clock() - (self.LastFired[methodName] or 0)) >= delay then
-		--
 		self.LastFired[methodName] = os.clock()
 
 		if isUnreliable then
@@ -101,13 +114,15 @@ function NetClient.Fire(self: NetClient, methodName: string, isUnreliable: boole
 	end
 end
 
+--[=[
+	Invoke a server-side RemoteFunction and return the result.
+]=]
 function NetClient.Get(self: NetClient, methodName: string, ...): ...any?
 	assert(methodName, "Method Not Provided")
-	--
+	-- Rate-limit outgoing calls to the server function.
 	local delay = 1 / NetUtils.MAXIMUM_CALLS
 
 	if (os.clock() - (self.LastFired[methodName] or 0)) >= delay then
-		--
 		self.LastFired[methodName] = os.clock()
 
 		return self.Remotes.Function:InvokeServer(methodName, ...)

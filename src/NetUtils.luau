@@ -9,7 +9,9 @@ export type Remotes = {
 }
 
 --[=[
-	Create a Container to store all Remotes
+	Create a container to store all remotes for this module.
+	On the server this is created under script.Parent.
+	On the client it is resolved by waiting for that folder.
 ]=]
 
 local CONTAINER: Folder?
@@ -29,7 +31,7 @@ local NetUtils = {
 }
 
 --[=[
-    Function to Fetch the Folder for respective Network tag
+    Find the remotes container for a given network tag.
 ]=]
 function NetUtils.getNetworks(tag: string): Folder?
 	assert(tag, "Provide a Tag to fectch Network.")

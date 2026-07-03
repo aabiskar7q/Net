@@ -3,6 +3,9 @@ local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local NetUtils = require(script.Parent.NetUtils)
 
+-- Server-side networking helper.
+-- This module creates the remote objects, validates client requests,
+-- and forwards allowed calls into the server-side service module.
 -- ====================================================
 -- 		================== TYPES ================
 -- ====================================================
@@ -34,7 +37,8 @@ export type NetServer = {
 -- ====================================================
 
 --[=[
-	Function to Create Remotes for given tag
+	Create the RemoteEvent, RemoteFunction, and UnreliableRemoteEvent
+	for a given network tag. This runs only on the server.
 ]=]
 
 local function createNewNetwork(tag: string): NetUtils.Remotes?
@@ -52,7 +56,7 @@ local function createNewNetwork(tag: string): NetUtils.Remotes?
 	container.Name = NetUtils.prefix .. tag
 	container.Parent = NetUtils.CONTAINER
 
-	--
+	-- Create remotes used for events, functions, and unreliable events.
 	local RE = Instance.new("RemoteEvent")
 	RE.Parent = container
 
@@ -69,6 +73,10 @@ local function createNewNetwork(tag: string): NetUtils.Remotes?
 	}
 end
 
+--[=[
+	Validate an incoming remote call from a client, ensure the
+	requested method exists and is accessible, then invoke it.
+]=]
 local function onEvent(
 	player: Player,
 	methodName: string,
@@ -76,6 +84,8 @@ local function onEvent(
 	accessFunctions: { Method }?,
 	...
 )
+	-- Validate the incoming client request and invoke the
+	-- matching method on the server module if allowed.
 	if not player or player.Parent ~= Players or not methodName then
 		return
 	end
@@ -102,25 +112,18 @@ local function onEvent(
 		return
 	end
 
-	--
+	-- Call the server-side method with the player as first argument.
 	local retVal = method(method, player, ...)
 
 	return retVal
 end
 
---[=[
-	Function to Handle Client Events
-]=]
-
---[=[
-
-]=]
-
 local NetServer = {}
 NetServer.__index = NetServer
 
 --[=[
-	Class Constructor to Initialize Networker in Server
+	Create a server-side Networker, build the remotes folder,
+	and wire event/function callbacks for client communication.
 ]=]
 
 function NetServer.init(
@@ -177,7 +180,8 @@ function NetServer.init(
 end
 
 --[=[
-	Function To Fire to Client
+	Send a remote event to a subset of clients, all clients, or
+	clients selected by a predicate. Supports unreliable events.
 ]=]
 
 function NetServer.Fire(
@@ -191,15 +195,15 @@ function NetServer.Fire(
 
 	local clients = {} :: { Player }
 
+	-- If no filter is provided, fire to all players.
 	if not players then
-		-- Fire All If not Provided
 		if isUnreliable then
 			self.Remotes.UEvent:FireAllClients(methodName, ...)
 		else
 			self.Remotes.Event:FireAllClients(methodName, ...)
 		end
 	elseif type(players) == "function" then
-		--
+		-- Filter players with a predicate function.
 		for _, player in Players:GetPlayers() do
 			if players(player) then
 				table.insert(clients, player)
@@ -215,7 +219,7 @@ function NetServer.Fire(
 		end
 	end
 
-	--
+	-- Send the event to selected clients.
 	for _, player in clients do
 		if isUnreliable then
 			self.Remotes.UEvent:FireClient(player, methodName, ...)
@@ -225,6 +229,10 @@ function NetServer.Fire(
 	end
 end
 
+--[=[
+	Return true if the given client method call is allowed by rate
+	limit settings. This prevents abuse of remote calls.
+]=]
 function NetServer.CheckRateLimitStatus(self: NetServer, player: Player, methodName: string): boolean?
 	if not player then
 		return false
@@ -250,6 +258,9 @@ function NetServer.CheckRateLimitStatus(self: NetServer, player: Player, methodN
 	return false
 end
 
+--[=[
+	Destroy the network container and clear rate-limit state.
+]=]
 function NetServer.clean(self: NetServer)
 	local container = NetUtils.getNetworks(self.Tag)
 
