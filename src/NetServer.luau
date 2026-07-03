@@ -202,6 +202,8 @@ function NetServer.Fire(
 		else
 			self.Remotes.Event:FireAllClients(methodName, ...)
 		end
+
+		return
 	elseif type(players) == "function" then
 		-- Filter players with a predicate function.
 		for _, player in Players:GetPlayers() do
